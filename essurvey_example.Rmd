@@ -1,0 +1,83 @@
+---
+output:
+  github_document:
+    html_preview: true
+---
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-",
+  eval = TRUE
+)
+options(tibble.print_min = 5, tibble.print_max = 5, tibble.max_extra_cols = 1)
+```
+
+# <img src="ess_logo.png" align="right"/>
+
+<br> <br>
+
+# essurvey: Download the European Social Survey into R
+
+<br>
+
+#### For more information visit https://ropensci.github.io/essurvey/
+
+### Setup
+```{r, eval = FALSE}
+install.packages("essurvey")
+library(essurvey)
+set_email("your@email.com")
+```
+
+```{r, echo = FALSE}
+library(essurvey)
+set_email("cimentadaj@gmail.com")
+```
+
+### Explory country/rounds
+
+```{r}
+show_countries()
+```
+
+```{r}
+show_rounds()
+```
+
+```{r}
+show_rounds_country(c(1, 3, 5))
+```
+
+### Download rounds
+
+```{r, eval = FALSE}
+two_rounds <- import_rounds(c(1, 8))
+
+twoe_rounds
+```
+
+```{r, echo = FALSE, include = FALSE}
+two_rounds <- import_rounds(c(1, 8))
+```
+
+```{r, echo = FALSE}
+two_rounds
+```
+
+### Download country/rounds
+
+```{r, eval = FALSE}
+dk_two <- import_country("Denmark", 1:2)
+dk_two
+```
+
+```{r, echo = FALSE, include = FALSE}
+dk_two <- import_country("Denmark", 1:2)
+```
+
+```{r, echo = FALSE}
+dk_two
+```
+
+[![ropensci_footer](https://ropensci.org/public_images/ropensci_footer.png)](https://ropensci.org)

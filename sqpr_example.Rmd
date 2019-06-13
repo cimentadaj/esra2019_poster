@@ -1,0 +1,132 @@
+---
+output:
+  github_document:
+    html_preview: true
+---
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-",
+  eval = TRUE
+)
+options(tibble.print_min = 5, tibble.print_max = 6, tibble.max_extra_cols = 1)
+```
+# <img src="sqpr_logo.jpg" align="right" width="200" height="200" />
+
+<br><br>
+
+# sqpr: R package to adjust for measurement error using the SQP API
+
+<br>
+
+#### For more information visit https://asqm.github.io/sqpr/
+
+<br>
+
+### Setup
+
+Install `sqpr` and login.
+```{r, eval = FALSE}
+devtools::install_github("asqm/sqpr")
+library(sqpr)
+library(dplyr)
+sqp_login('your username', 'your password')
+```
+
+```{r, echo = FALSE, include = FALSE}
+library(sqpr)
+library(dplyr)
+library(tibble)
+sqp_login('asqme', 'asqme')
+```
+
+Download ESS data for the analysis
+```{r, results = 'hide', messsage = FALSE}
+library(essurvey)
+sp <-
+  import_country("Spain", 4, "cimentadaj@gmail.com") %>%
+  select(selected_vars, pspwght) %>%
+  filter(complete.cases(.))
+```
+
+### Download quality data from SQP API
+
+```{r}
+# Define variables used in the analysis
+selected_vars <- c("trstplt", "ppltrst", "polintr", "stflife", "eisced")
+
+# Find different studies in the SQP API
+ess_four <- find_studies("ESS Round 4")
+
+# Find the questions from the analysis in that study
+q_ess <- find_questions(ess_four$id, selected_vars)
+sp_tv <- q_ess[q_ess$language_iso == "spa", ]
+
+# Extract the quality estimates for those questions from the SQP API
+quality_pred <- get_estimates(sp_tv$id)
+
+# Add quality information manually with sqp_bind_metrics
+quality_pred <-
+  quality_pred %>%
+  sqp_bind_metrics(eisced, list(quality = 0.93)) %>%
+  slice(match(selected_vars, .$question))
+
+# Final quality data from SQP API
+quality_pred
+```
+
+### Adjust correlation for CMV and quality
+
+```{r}
+# Unadjusted correlation for comparison
+original_cor <- sp %>% select(-pspwght) %>% sqp_correlate()
+
+# Adjusting correlation for Common Method Variance (CMV) and
+# quality
+adj_cor <-
+  sp %>%
+  sqp_correlate(diag = quality_pred$quality, wt = pspwght) %>%
+  sqp_cmv_cor(sqp_data = quality_pred, trstplt, ppltrst)
+
+adj_cor <-
+  adj_cor %>%
+  select(-rowname) %>%
+  as.matrix() %>%
+  cov2cor()  %>%
+  as_tibble() %>%
+  add_column(rowname = adj_cor$rowname, .before = 1)
+```
+
+```{r}
+# Unadjusted correlation
+original_cor
+```
+```{r}
+# Adjusted correlation
+adj_cor
+```
+
+### Adjust covariance for CMV and quality
+
+```{r}
+# Unadjusted covariance for comparison
+original_cov <- sp %>% select(-pspwght) %>% sqp_covariance()
+
+# Adjusting covariance for Common Method Variance (CMV) and quality
+adj_cov <-
+  sp %>%
+  sqp_covariance(diag = quality_pred$quality, wt = pspwght) %>%
+  sqp_cmv_cov(sqp_data = quality_pred, original_data = sp, trstplt, ppltrst)
+```
+
+
+```{r}
+# Unadjusted covariance
+original_cov
+```
+
+```{r}
+# Adjusted covariance
+adj_cov
+```
